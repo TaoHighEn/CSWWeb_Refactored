@@ -1,0 +1,28 @@
+{
+    "AES": {
+        "KEY": "01CSWSytem2025AHoC6Q7a93CSWSytem",
+        "IV": "System07Iks2KK6Q"
+    },
+    "Jwt": {
+        "Key": "YourSecretKeyIsLongEnoughFor256BitsOfSecurity",
+        "Issuer": "AuthCheck",
+        "Audience": "APIUsers",
+        "ExpireMinutes": 60
+    },
+    "ConnectionStrings": {
+        "MssqlConnection": "Data Source=localhost;Initial Catalog=WebAPIA;Persist Security Info=True;User ID=sa;Password=P@ssw0rd;Trust Server Certificate=True;Connection Timeout=5;"
+    },
+    "SqliteSettings": {
+        "DbPath": "Data/LocalBackup.db",
+        "Password": "StrongPassword123!"
+    },
+    "SyncSettings": {
+        "IntervalMinutes": 15,
+        "EnabledOnStartup": true,
+        "ExpireHours": 72
+    },
+    "MemoryCacheKey": {
+        "LogKey": "ApiLog",
+        "AuthKey": "Auth",
+    }
+}

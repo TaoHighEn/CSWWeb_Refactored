@@ -1,0 +1,6 @@
+@CSWWeb_HostAddress = http://localhost:5191
+
+GET {{CSWWeb_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
