@@ -13,6 +13,6 @@ namespace CSWWeb.Lib.Interface
     public interface ICustomLogger
     {
         // 使用者需實作自己的 Log 行為，例如寫入 MemoryCache 或其他 Log 機制
-        void Log(HttpRequest request , string message,string wsap);
+        void LogError(HttpResponse request , string message,string wsap);
     }
 }

@@ -16,6 +16,7 @@ public partial class WebApiaContext : DbContext
     {
     }
 
+    public virtual DbSet<TbSysApiApplylog> TbSysApiApplylogs { get; set; }
     public virtual DbSet<TbSysWsAccount> TbSysWsAccounts { get; set; }
 
     public virtual DbSet<TbSysWsAccountHist> TbSysWsAccountHists { get; set; }
@@ -30,12 +31,39 @@ public partial class WebApiaContext : DbContext
 
     public virtual DbSet<TbSysWsPrivHist> TbSysWsPrivHists { get; set; }
 
-//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//        => optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=WebAPIA;Persist Security Info=True;User ID=sa;Password=P@ssw0rd;Trust Server Certificate=True;");
+    //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+    //        => optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=WebAPIA;Persist Security Info=True;User ID=sa;Password=P@ssw0rd;Trust Server Certificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<TbSysApiApplylog>(entity =>
+        {
+            entity
+                //.HasNoKey()
+                .ToTable("TB_SYS_API_APPLYLOG");
+
+            entity.Property(e => e.Count).HasColumnName("COUNT");
+            entity.Property(e => e.Lastdatetime)
+                .HasColumnType("datetime")
+                .HasColumnName("LASTDATETIME");
+            entity.Property(e => e.Method)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("METHOD");
+            entity.Property(e => e.Module)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("MODULE");
+            entity.Property(e => e.Seq)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("SEQ");
+            entity.Property(e => e.Sys)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("SYS");
+        });
+
         modelBuilder.Entity<TbSysWsAccount>(entity =>
         {
             entity

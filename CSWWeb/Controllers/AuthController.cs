@@ -18,14 +18,16 @@ namespace CSWWeb.Controllers
         private readonly JwtHelper _jwtHelper;
         private readonly IMemoryCache _memoryCache;
         private readonly DbContextProvider _contextProvider;
+        private readonly AesEncryptionHelper _aesEncryptionHelper;
         private readonly string _authKey;
 
-        public AuthController(JwtHelper jwtHelper, IMemoryCache memoryCache, DbContextProvider contextProvider, IConfiguration configuration)
+        public AuthController(JwtHelper jwtHelper, IMemoryCache memoryCache, DbContextProvider contextProvider, IConfiguration configuration, AesEncryptionHelper aesEncryptionHelper)
         {
             _jwtHelper = jwtHelper;
             _memoryCache = memoryCache;
             _contextProvider = contextProvider;
             _authKey = configuration["MemoryCacheKey:AuthKey"];
+            _aesEncryptionHelper = aesEncryptionHelper;
         }
 
         [HttpPost]
@@ -84,6 +86,18 @@ namespace CSWWeb.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
+        [HttpGet]
+        public string DESDecode(string encrypt_str)
+        {
+            var result = _aesEncryptionHelper.DESDecryptString(encrypt_str);
+            return result;
+        }
+        [HttpGet]
+        public string DESEncode(string psw)
+        {
+            var result = _aesEncryptionHelper.DESEncryptString(psw);
+            return result;
+        }
     }
 
     public class LoginRequest
@@ -100,10 +114,10 @@ namespace CSWWeb.Controllers
                 {
                     var serviceProvider = new HttpContextAccessor().HttpContext?.RequestServices;
                     var aesHelper = serviceProvider?.GetService<AesEncryptionHelper>();
-                    _Password = aesHelper != null ? aesHelper.EncryptString(value) : value;
+                    //_Password = aesHelper != null ? aesHelper.EncryptString(value) : value;
+                    _Password = aesHelper != null ? aesHelper.DESEncryptString(value) : value;
                 }
             }
         }
-
     }
 }

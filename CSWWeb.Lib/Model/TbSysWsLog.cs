@@ -23,15 +23,15 @@ public partial class TbSysWsLog : ICustomLogger
     /// 實作 ICustomLogger 的 Log 方法
     /// </summary>
     /// <param name="message">要記錄的訊息</param>
-    public void Log(HttpRequest request, string message, string wsap)
+    public void LogError(HttpResponse res, string message, string wsap)
     {
         WsAp = wsap != null ? wsap : "Unrestricted";
         // 設定 LogMessage、預設 LogType 為 INFO，並記錄 LogStatus 與目前 UTC 時間
-        WsModule = request.Path;
-        WsApServer = request.Host.Value;
-        LogMessage = message;
-        LogType = "INFO";
-        LogStatus = "R";
+        WsModule = res.HttpContext.GetEndpoint().DisplayName;
+        WsApServer = res.HttpContext.Connection.RemoteIpAddress.ToString();
+        LogMessage = message + "HttpStatus：" + res.StatusCode ;
+        LogType = "Err";
+        LogStatus = "N";
         Datestamp = DateTime.UtcNow.AddHours(8);
     }
 }

@@ -68,5 +68,61 @@ namespace CSWWeb.Lib.Utils
                 }
             }
         }
+
+        /// <summary>
+        /// 現行系統的DES解密
+        /// </summary>
+        /// <param name="encryptedText"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public string DESDecryptString(string encryptedText)
+        {
+            if (string.IsNullOrEmpty(encryptedText))
+                throw new ArgumentNullException(nameof(encryptedText));
+            using (var des = new DESCryptoServiceProvider())
+            {
+                des.Key = ASCIIEncoding.ASCII.GetBytes("WSau4a83");
+                des.IV = ASCIIEncoding.ASCII.GetBytes("WSau4a83");
+                // 進行解碼
+                var ms = new System.IO.MemoryStream();
+                var cs = new CryptoStream(ms, des.CreateDecryptor(), CryptoStreamMode.Write);
+                var inputByteArray = Convert.FromBase64String(encryptedText);
+                cs.Write(inputByteArray, 0, inputByteArray.Length);
+                cs.FlushFinalBlock();
+                cs.Close();
+                // 將解碼的文字轉成 String.
+                var str = Encoding.UTF8.GetString(ms.ToArray());
+                ms.Close();
+                return str;
+            }
+        }
+
+        /// <summary>
+        /// 現行系統的DES加密
+        /// </summary>
+        /// <param name="encryptText"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public string DESEncryptString(string encryptText)
+        {
+            if (string.IsNullOrEmpty(encryptText))
+                throw new ArgumentNullException(nameof(encryptText));
+            using (var des = new DESCryptoServiceProvider())
+            {
+                des.Key = ASCIIEncoding.ASCII.GetBytes("WSau4a83");
+                des.IV = ASCIIEncoding.ASCII.GetBytes("WSau4a83");
+                // 進行加密
+                var ms = new System.IO.MemoryStream();
+                var cs = new CryptoStream(ms, des.CreateEncryptor(), CryptoStreamMode.Write);
+                var inputByteArray = Encoding.UTF8.GetBytes(encryptText);
+                cs.Write(inputByteArray, 0, inputByteArray.Length);
+                cs.FlushFinalBlock();
+                cs.Close();
+                // 轉出字串
+                var str = Convert.ToBase64String(ms.ToArray());
+                ms.Close();
+                return str;
+            }
+        }
     }
 }

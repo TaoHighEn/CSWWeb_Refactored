@@ -54,7 +54,8 @@ namespace CSWWeb.Lib.Middlewares
                     }
 
                     var username = credentials[0];
-                    var password = _aesEncryptionHelper.EncryptString(credentials[1]);
+                    //var password = _aesEncryptionHelper.EncryptString(credentials[1]);
+                    var password = _aesEncryptionHelper.DESEncryptString(credentials[1]);
 
                     // 驗證帳號密碼
                     var accountInfo = _cacheData.GetList<T>().FirstOrDefault(x => x.ValidateUser(username, password));
