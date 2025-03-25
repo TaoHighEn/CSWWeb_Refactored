@@ -19,11 +19,12 @@ namespace CSWWeb
             //設定自定義設定檔
             builder.Configuration.AddJsonFile("customsettings.json", optional: true, reloadOnChange: true);
             builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
-            builder.Services.AddSingleton<CacheData>();
+            builder.Services.AddScoped<CacheData>();
 
             // 啟用身份驗證與授權
             builder.Services.AddAuthentication().AddCookie();
             builder.Services.AddAuthorization();
+            builder.Services.AddHttpContextAccessor();
             // Add services to the container.
             #region 資料庫相關
             // 配置MSSQL 資料庫
@@ -58,7 +59,7 @@ namespace CSWWeb
 
             #endregion
             // 註冊JwtHelper
-            builder.Services.AddSingleton<JwtHelper>();
+            builder.Services.AddScoped<JwtHelper>();
 
             // 註冊自訂 Logger，例如 MyCustomLogger 必須實作 ICustomLogger
             builder.Services.AddScoped<Lib.Model.TbSysWsLog>();

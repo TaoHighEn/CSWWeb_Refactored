@@ -34,6 +34,9 @@ namespace CSWWeb.Lib.Middlewares
 
         public async Task InvokeAsync(HttpContext context)
         {
+
+            await _next(context);
+
             // 產生 Log 訊息
             string logMessage = $"API Called: {context.Request.Path} | Method: {context.Request.Method} | IP: {context.Connection.RemoteIpAddress}";
 
@@ -57,8 +60,6 @@ namespace CSWWeb.Lib.Middlewares
                 // 將新建立的 CacheData 實例存入 MemoryCache
                 _memoryCache.Set(_logkey, newCacheData);
             }
-
-            await _next(context);
         }
     }
 }
