@@ -23,6 +23,6 @@
     },
     "MemoryCacheKey": {
         "LogKey": "ApiLog",
-        "AuthKey": "Auth",
+        "AuthKey": "Auth"
     }
 }

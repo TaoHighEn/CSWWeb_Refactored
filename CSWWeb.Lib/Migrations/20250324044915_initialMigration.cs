@@ -3,99 +3,14 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace CSWWeb.Migrations.Sqlite
+namespace CSWWeb.Lib.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class initialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "AccountInfos",
-                columns: table => new
-                {
-                    ID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ACCOUNT = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    NAME = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    PASSWORD = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AccountInfos", x => x.ID);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ModuleInfos",
-                columns: table => new
-                {
-                    ID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ActionName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    ControllerName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ModuleInfos", x => x.ID);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PRIVInfos",
-                columns: table => new
-                {
-                    ID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ACCOUNT_ID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    MODULE_ID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PRIVInfos", x => x.ID);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SyncLogs",
-                columns: table => new
-                {
-                    ID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    SyncTime = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    SyncSource = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(200)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SyncLogs", x => x.ID);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SystemLogs",
-                columns: table => new
-                {
-                    ID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    LogLevel = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    Exception = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    UserName = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    RequestPath = table.Column<string>(type: "nvarchar(200)", nullable: false),
-                    LogDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UserIP = table.Column<string>(type: "nvarchar(200)", nullable: false, defaultValue: "")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SystemLogs", x => x.ID);
-                });
-
             migrationBuilder.CreateTable(
                 name: "TB_SYS_WS_ACCOUNT",
                 columns: table => new
@@ -117,6 +32,7 @@ namespace CSWWeb.Migrations.Sqlite
                 },
                 constraints: table =>
                 {
+                    table.PrimaryKey("PK_TB_SYS_WS_ACCOUNT", x => x.ACCOUNT_ID);
                 });
 
             migrationBuilder.CreateTable(
@@ -142,6 +58,7 @@ namespace CSWWeb.Migrations.Sqlite
                 },
                 constraints: table =>
                 {
+                    table.PrimaryKey("PK_TB_SYS_WS_ACCOUNT_HIST", x => x.HIST_SEQ);
                 });
 
             migrationBuilder.CreateTable(
@@ -159,6 +76,7 @@ namespace CSWWeb.Migrations.Sqlite
                 },
                 constraints: table =>
                 {
+                    table.PrimaryKey("PK_TB_SYS_WS_AP_SERVER", x => x.AP_SERVER_ID);
                 });
 
             migrationBuilder.CreateTable(
@@ -177,6 +95,7 @@ namespace CSWWeb.Migrations.Sqlite
                 },
                 constraints: table =>
                 {
+                    table.PrimaryKey("PK_TB_SYS_WS_LOG", x => x.SEQ);
                 });
 
             migrationBuilder.CreateTable(
@@ -193,6 +112,7 @@ namespace CSWWeb.Migrations.Sqlite
                 },
                 constraints: table =>
                 {
+                    table.PrimaryKey("PK_TB_SYS_WS_MODULE", x => x.MODULE_ID);
                 });
 
             migrationBuilder.CreateTable(
@@ -214,6 +134,7 @@ namespace CSWWeb.Migrations.Sqlite
                 },
                 constraints: table =>
                 {
+                    table.PrimaryKey("PK_TB_SYS_WS_PRIV", x => x.PRIV_SEQ);
                 });
 
             migrationBuilder.CreateTable(
@@ -235,27 +156,13 @@ namespace CSWWeb.Migrations.Sqlite
                 },
                 constraints: table =>
                 {
+                    table.PrimaryKey("PK_TB_SYS_WS_PRIV_HIST", x => x.HIST_SEQ);
                 });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "AccountInfos");
-
-            migrationBuilder.DropTable(
-                name: "ModuleInfos");
-
-            migrationBuilder.DropTable(
-                name: "PRIVInfos");
-
-            migrationBuilder.DropTable(
-                name: "SyncLogs");
-
-            migrationBuilder.DropTable(
-                name: "SystemLogs");
-
             migrationBuilder.DropTable(
                 name: "TB_SYS_WS_ACCOUNT");
 

@@ -5,9 +5,11 @@ using System.Security.Claims;
 using System.Text;
 using CSWWeb.Lib.Interface;
 using CSWWeb.Lib.Model;
+using CSWWeb.Lib.Utils;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 
 namespace CSWWeb.Lib.Middlewares
 {
@@ -18,17 +20,21 @@ namespace CSWWeb.Lib.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly IMemoryCache _memoData;
-        public CustomMiddleware(RequestDelegate next, IMemoryCache memoData)
+        private readonly AesEncryptionHelper _aesEncryptionHelper;
+        private readonly string _authkey;
+        public CustomMiddleware(RequestDelegate next, IMemoryCache memoData,AesEncryptionHelper aesEncryptionHelper, IConfiguration configuration)
         {
             _next = next;
             _memoData = memoData;
+            _aesEncryptionHelper = aesEncryptionHelper;
+            _authkey = configuration["MemoryCacheKey:AuthKey"] ?? "";
         }
         public async Task InvokeAsync(HttpContext context)
         {
             try
             {
                 var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
-                _memoData.TryGetValue("Auth", out CacheData _cacheData);
+                _memoData.TryGetValue(_authkey, out CacheData _cacheData);
                 if (_cacheData == null)
                 {
                     context.Response.StatusCode = 500; // 錯誤請求
@@ -48,7 +54,7 @@ namespace CSWWeb.Lib.Middlewares
                     }
 
                     var username = credentials[0];
-                    var password = credentials[1];
+                    var password = _aesEncryptionHelper.EncryptString(credentials[1]);
 
                     // 驗證帳號密碼
                     var accountInfo = _cacheData.GetList<T>().FirstOrDefault(x => x.ValidateUser(username, password));

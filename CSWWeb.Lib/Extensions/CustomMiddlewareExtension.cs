@@ -25,7 +25,7 @@ namespace CSWWeb.Lib.Extensions
         // 其中 TLogger 必須實作 ICustomLogger
         public static IApplicationBuilder UseLoggerMiddleware<TDbContext, TLogger>(this IApplicationBuilder app)
             where TDbContext : DbContext
-            where TLogger : class, ICustomLogger
+            where TLogger : class , ICustomLogger
         {
             return app.UseMiddleware<LoggerMiddleware<TDbContext, TLogger>>();
         }

@@ -19,18 +19,20 @@ namespace CSWWeb.Lib.Middlewares
         private readonly RequestDelegate _next;
         private readonly IMemoryCache _memoryCache;
         private readonly string _secretKey;
+        private readonly string _authkey;
 
         public CustomJWTMiddleware(RequestDelegate next, IConfiguration configuration, IMemoryCache memoryCache)
         {
             _next = next;
             _secretKey = configuration["Jwt:Key"] ?? "";
+            _authkey = configuration["MemoryCacheKey:AuthKey"] ?? "";
             _memoryCache = memoryCache;
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
             var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
-            _memoryCache.TryGetValue("Auth", out CacheData cacheData);
+            _memoryCache.TryGetValue(_authkey, out CacheData cacheData);
             if (cacheData == null)
             {
                 context.Response.StatusCode = 500; // 錯誤請求

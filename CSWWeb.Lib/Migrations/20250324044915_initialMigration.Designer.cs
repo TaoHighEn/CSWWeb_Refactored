@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace CSWWeb.Migrations.Sqlite
+namespace CSWWeb.Lib.Migrations
 {
     [DbContext(typeof(SqliteDbContext))]
-    [Migration("20250320065205_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250324044915_initialMigration")]
+    partial class initialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,178 +25,7 @@ namespace CSWWeb.Migrations.Sqlite
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("CSWWeb.Models.AccountInfo", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("ID");
-
-                    b.Property<string>("Account")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("ACCOUNT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("NAME");
-
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PASSWORD");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("AccountInfos");
-                });
-
-            modelBuilder.Entity("CSWWeb.Models.ModuleInfo", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("ID");
-
-                    b.Property<string>("ActionName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ControllerName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ModuleInfos");
-                });
-
-            modelBuilder.Entity("CSWWeb.Models.Privinfo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("ACCOUNT_ID");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("ModuleId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("MODULE_ID");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PRIVInfos", (string)null);
-                });
-
-            modelBuilder.Entity("CSWWeb.Models.SyncLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SyncSource")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("SyncTime")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SyncLogs");
-                });
-
-            modelBuilder.Entity("CSWWeb.Models.SystemLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Exception")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LogDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("LogLevel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RequestPath")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserIp")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
-                        .HasDefaultValue("")
-                        .HasColumnName("UserIP");
-
-                    b.Property<string>("UserName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SystemLogs");
-                });
-
-            modelBuilder.Entity("CSWWeb.Models.TbSysWsAccount", b =>
+            modelBuilder.Entity("CSWWeb.Lib.Model.TbSysWsAccount", b =>
                 {
                     b.Property<int>("AccountId")
                         .ValueGeneratedOnAdd()
@@ -282,11 +111,20 @@ namespace CSWWeb.Migrations.Sqlite
                         .HasColumnType("varchar(100)")
                         .HasColumnName("WS_AP");
 
+                    b.HasKey("AccountId");
+
                     b.ToTable("TB_SYS_WS_ACCOUNT", (string)null);
                 });
 
-            modelBuilder.Entity("CSWWeb.Models.TbSysWsAccountHist", b =>
+            modelBuilder.Entity("CSWWeb.Lib.Model.TbSysWsAccountHist", b =>
                 {
+                    b.Property<int>("HistSeq")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("HIST_SEQ");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HistSeq"));
+
                     b.Property<int?>("AccountId")
                         .HasColumnType("int")
                         .HasColumnName("ACCOUNT_ID");
@@ -296,13 +134,6 @@ namespace CSWWeb.Migrations.Sqlite
                         .HasColumnType("datetime")
                         .HasColumnName("DATESTAMP")
                         .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int>("HistSeq")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("HIST_SEQ");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HistSeq"));
 
                     b.Property<string>("ModifyType")
                         .HasMaxLength(50)
@@ -374,10 +205,12 @@ namespace CSWWeb.Migrations.Sqlite
                         .HasColumnType("varchar(100)")
                         .HasColumnName("WS_AP");
 
+                    b.HasKey("HistSeq");
+
                     b.ToTable("TB_SYS_WS_ACCOUNT_HIST", (string)null);
                 });
 
-            modelBuilder.Entity("CSWWeb.Models.TbSysWsApServer", b =>
+            modelBuilder.Entity("CSWWeb.Lib.Model.TbSysWsApServer", b =>
                 {
                     b.Property<int>("ApServerId")
                         .ValueGeneratedOnAdd()
@@ -425,11 +258,20 @@ namespace CSWWeb.Migrations.Sqlite
                         .HasColumnType("varchar(100)")
                         .HasColumnName("WS_AP_SERVER");
 
+                    b.HasKey("ApServerId");
+
                     b.ToTable("TB_SYS_WS_AP_SERVER", (string)null);
                 });
 
-            modelBuilder.Entity("CSWWeb.Models.TbSysWsLog", b =>
+            modelBuilder.Entity("CSWWeb.Lib.Model.TbSysWsLog", b =>
                 {
+                    b.Property<int>("Seq")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("SEQ");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Seq"));
+
                     b.Property<DateTime?>("Datestamp")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
@@ -459,13 +301,6 @@ namespace CSWWeb.Migrations.Sqlite
                         .HasDefaultValue("NORMAL")
                         .HasColumnName("LOG_TYPE");
 
-                    b.Property<int>("Seq")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("SEQ");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Seq"));
-
                     b.Property<string>("WsAp")
                         .HasMaxLength(100)
                         .IsUnicode(false)
@@ -484,23 +319,25 @@ namespace CSWWeb.Migrations.Sqlite
                         .HasColumnType("varchar(100)")
                         .HasColumnName("WS_MODULE");
 
+                    b.HasKey("Seq");
+
                     b.ToTable("TB_SYS_WS_LOG", (string)null);
                 });
 
-            modelBuilder.Entity("CSWWeb.Models.TbSysWsModule", b =>
+            modelBuilder.Entity("CSWWeb.Lib.Model.TbSysWsModule", b =>
                 {
-                    b.Property<DateTime?>("Datestamp")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("DATESTAMP")
-                        .HasDefaultValueSql("(getdate())");
-
                     b.Property<int>("ModuleId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("MODULE_ID");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ModuleId"));
+
+                    b.Property<DateTime?>("Datestamp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("DATESTAMP")
+                        .HasDefaultValueSql("(getdate())");
 
                     b.Property<string>("Userstamp")
                         .HasMaxLength(50)
@@ -529,11 +366,20 @@ namespace CSWWeb.Migrations.Sqlite
                         .HasColumnType("varchar(100)")
                         .HasColumnName("WS_MODULE");
 
+                    b.HasKey("ModuleId");
+
                     b.ToTable("TB_SYS_WS_MODULE", (string)null);
                 });
 
-            modelBuilder.Entity("CSWWeb.Models.TbSysWsPriv", b =>
+            modelBuilder.Entity("CSWWeb.Lib.Model.TbSysWsPriv", b =>
                 {
+                    b.Property<int>("PrivSeq")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("PRIV_SEQ");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PrivSeq"));
+
                     b.Property<int>("AccountId")
                         .HasColumnType("int")
                         .HasColumnName("ACCOUNT_ID");
@@ -550,13 +396,6 @@ namespace CSWWeb.Migrations.Sqlite
 
                     b.Property<DateTime?>("LastExecDate")
                         .HasColumnType("datetime");
-
-                    b.Property<int>("PrivSeq")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("PRIV_SEQ");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PrivSeq"));
 
                     b.Property<string>("Remark")
                         .HasMaxLength(1000)
@@ -597,11 +436,20 @@ namespace CSWWeb.Migrations.Sqlite
                         .HasColumnType("varchar(100)")
                         .HasColumnName("WS_MODULE");
 
+                    b.HasKey("PrivSeq");
+
                     b.ToTable("TB_SYS_WS_PRIV", (string)null);
                 });
 
-            modelBuilder.Entity("CSWWeb.Models.TbSysWsPrivHist", b =>
+            modelBuilder.Entity("CSWWeb.Lib.Model.TbSysWsPrivHist", b =>
                 {
+                    b.Property<int>("HistSeq")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("HIST_SEQ");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HistSeq"));
+
                     b.Property<int?>("AccountId")
                         .HasColumnType("int")
                         .HasColumnName("ACCOUNT_ID");
@@ -611,13 +459,6 @@ namespace CSWWeb.Migrations.Sqlite
                         .HasColumnType("datetime")
                         .HasColumnName("DATESTAMP")
                         .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int>("HistSeq")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("HIST_SEQ");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HistSeq"));
 
                     b.Property<string>("ModifyType")
                         .HasMaxLength(100)
@@ -662,6 +503,8 @@ namespace CSWWeb.Migrations.Sqlite
                         .IsUnicode(false)
                         .HasColumnType("varchar(100)")
                         .HasColumnName("WS_MODULE");
+
+                    b.HasKey("HistSeq");
 
                     b.ToTable("TB_SYS_WS_PRIV_HIST", (string)null);
                 });

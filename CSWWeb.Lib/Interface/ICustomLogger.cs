@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace CSWWeb.Lib.Interface
 {
@@ -12,6 +13,6 @@ namespace CSWWeb.Lib.Interface
     public interface ICustomLogger
     {
         // 使用者需實作自己的 Log 行為，例如寫入 MemoryCache 或其他 Log 機制
-        void Log(string endpoint , string message,string wsap);
+        void Log(HttpRequest request , string message,string wsap);
     }
 }
