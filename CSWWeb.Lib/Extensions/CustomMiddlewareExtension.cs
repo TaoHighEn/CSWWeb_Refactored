@@ -23,11 +23,14 @@ namespace CSWWeb.Lib.Extensions
         }
         // 這個方法讓主程式能夠注入自訂 LoggerMiddleware，
         // 其中 TLogger 必須實作 ICustomLogger
-        public static IApplicationBuilder UseLoggerMiddleware<TDbContext, TLogger>(this IApplicationBuilder app)
-            where TDbContext : DbContext
-            where TLogger : class , ICustomLogger
+        public static IApplicationBuilder UseLoggerMiddleware<T>(this IApplicationBuilder app)
+            where T : class
         {
-            return app.UseMiddleware<LoggerMiddleware<TDbContext, TLogger>>();
+            return app.UseMiddleware<T>();
+        }
+        public static IApplicationBuilder UseTTypeMiddleware<T>(this IApplicationBuilder app) where T : class
+        {
+            return app.UseMiddleware<T>();
         }
     }
 }

@@ -23,11 +23,13 @@ namespace CSWWeb.Lib.Services
         private readonly IMemoryCache _memoryCache;
         private Timer _timer;
         private bool _isSyncEnabled = true;
-        private int _sync_time = 15;
-        private int _cache_expire_hour = 72;
+        private readonly int _syncInterval;         // 單位：秒
+        private readonly int _cacheExpireHour;
         private readonly object _syncLock = new object();
-        private readonly string _authkey;
-        private readonly string _logkey;
+        private readonly string _authKey;
+        private readonly string _logKey;
+        private readonly string _logCountKey;
+
         public BackgroundSyncService(
             IServiceProvider serviceProvider,
             IMemoryCache memoryCache,
@@ -35,20 +37,31 @@ namespace CSWWeb.Lib.Services
         {
             _serviceProvider = serviceProvider;
             _memoryCache = memoryCache;
-            int.TryParse(configuration["SyncSettings:IntervalMinutes"], out _sync_time);
-            int.TryParse(configuration["SyncSettings:ExpireHours"], out _cache_expire_hour);
-            _authkey = configuration["MemoryCacheKey:AuthKey"];
-            _logkey = configuration["MemoryCacheKey:LogKey"];
+            // 若設定為分鐘，可依需求轉換成秒數 (這裡直接轉為秒)
+            int.TryParse(configuration["SyncSettings:IntervalMinutes"], out int intervalMinutes);
+            //_syncInterval = intervalMinutes > 0 ? intervalMinutes * 60 : 15;
+            _syncInterval = intervalMinutes > 0 ? intervalMinutes : 15;
+            int.TryParse(configuration["SyncSettings:ExpireHours"], out _cacheExpireHour);
+
+            _authKey = configuration["MemoryCacheKey:AuthKey"];
+            _logKey = configuration["MemoryCacheKey:LogKey"];
+            _logCountKey = configuration["MemoryCacheKey:LogCountKey"];
         }
 
-        // 停止同步
+        #region Public API
+
+        /// <summary>
+        /// 停止同步作業，並記錄活動
+        /// </summary>
         public void StopSync()
         {
             _isSyncEnabled = false;
             LogSyncActivity("Stopped", "手動停止同步");
         }
 
-        // 啟動同步
+        /// <summary>
+        /// 啟動同步作業，並記錄活動，同時立即執行一次同步
+        /// </summary>
         public void StartSync()
         {
             _isSyncEnabled = true;
@@ -56,7 +69,9 @@ namespace CSWWeb.Lib.Services
             SyncData();
         }
 
-        // 手動觸發同步
+        /// <summary>
+        /// 若同步啟用，手動觸發一次同步作業
+        /// </summary>
         public void TriggerSync()
         {
             if (_isSyncEnabled)
@@ -64,54 +79,25 @@ namespace CSWWeb.Lib.Services
                 SyncData();
             }
         }
-        public bool Status()
-        {
-            return _isSyncEnabled;
-        }
 
-        // 記錄同步活動
-        private void LogSyncActivity(string status, string description, string source = "系統")
-        {
-            try
-            {
-                using (var scope = _serviceProvider.CreateScope())
-                {
-                    var dbContextProvider = scope.ServiceProvider.GetRequiredService<DbContextProvider>();
-                    var dbContext = dbContextProvider.GetDbContext();
-                    var DB = dbContext.Database.IsSqlServer() ? "MSSQL" : "Sqlite";
-                    //寫一筆同步資料進資料庫中
-                    dbContext.Set<TbSysWsLog>().Add(new TbSysWsLog
-                    {
-                        WsAp = "System",
-                        // 設定 LogMessage、預設 LogType 為 INFO，並記錄 LogStatus 與目前 UTC 時間
-                        WsModule = "Sync",
-                        LogMessage = "同步資料Log From " + DB,
-                        LogType = "INFO",
-                        LogStatus = "Received",
-                        Datestamp = DateTime.UtcNow,
-                    });
-                    dbContext.SaveChanges();
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
+        /// <summary>
+        /// 回傳目前同步是否啟用的狀態
+        /// </summary>
+        public bool Status() => _isSyncEnabled;
+
+        #endregion
+
+        #region BackgroundService Override
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                // Only if you need to access scoped services during initialization
-            }
-            // 在啟動時執行一次同步
+            // 初次啟動時立即同步一次
             SyncData();
 
-            // 設定每15分鐘執行一次的計時器
-            TimeSpan interval = TimeSpan.FromSeconds(_sync_time);
-            _timer = new Timer(SyncCallback, _isSyncEnabled, interval, interval);
+            // 設定計時器以定時呼叫 SyncCallback
+            _timer = new Timer(SyncCallback, null, TimeSpan.FromSeconds(_syncInterval), TimeSpan.FromSeconds(_syncInterval));
 
+            // 等待直到取消要求
             while (!stoppingToken.IsCancellationRequested)
             {
                 await Task.Delay(1000, stoppingToken);
@@ -120,10 +106,19 @@ namespace CSWWeb.Lib.Services
             _timer?.Change(Timeout.Infinite, 0);
         }
 
+        public override void Dispose()
+        {
+            _timer?.Dispose();
+            base.Dispose();
+        }
+
+        #endregion
+
+        #region Sync Process
+
         /// <summary>
-        /// timer callback
+        /// Timer callback：檢查是否啟用同步，若是則執行同步
         /// </summary>
-        /// <param name="state"></param>
         private void SyncCallback(object state)
         {
             if (_isSyncEnabled)
@@ -132,34 +127,38 @@ namespace CSWWeb.Lib.Services
             }
         }
 
-        // 同步資料
+        /// <summary>
+        /// 同步作業：更新 MemoryCache、寫入 Log、備份資料、檢查 Sqlite Log
+        /// </summary>
         private void SyncData()
         {
             if (!_isSyncEnabled)
                 return;
 
+            // 避免重複同步
             if (!Monitor.TryEnter(_syncLock, 0))
-            {
                 return;
-            }
 
             try
             {
                 using var scope = _serviceProvider.CreateScope();
                 var dbContextProvider = scope.ServiceProvider.GetRequiredService<DbContextProvider>();
                 var dbContext = dbContextProvider.GetDbContext();
+
+                // 從資料庫讀取最新資料
                 var (accounts, modules, privileges) = FetchDataFromDb(dbContext);
-                var DB = dbContext.Database.IsSqlServer() ? "MSSQL" : "Sqlite";
-                //更新Cache
-                UpdateMemoryCache(accounts, modules, privileges, DB);
-                //將memorycache的log存入DB
+                string dbType = dbContext.Database.IsSqlServer() ? "MSSQL" : "Sqlite";
+
+                // 更新記憶體快取
+                UpdateMemoryCache(accounts, modules, privileges);
+
+                // 將記憶體中累積的 Log 寫入資料庫
                 LogProcessData(dbContext);
-                //整理Log
+
+                // 若使用 MSSQL，備份至 Sqlite 並檢查 Sqlite 是否有遺漏 Log
                 if (dbContext.Database.IsSqlServer())
                 {
-                    //todo 將account、module、priv同步到sqlite
                     BackupToSqlite(accounts, modules, privileges);
-                    //todo 檢查有無loss的Log在Sqlite中存回mssql
                     CheckSqliteLog(dbContext);
                 }
             }
@@ -170,118 +169,161 @@ namespace CSWWeb.Lib.Services
         }
 
         /// <summary>
-        /// 將Sqlite紀錄的Log存回MSSQL
+        /// 從資料庫取得帳號、模組與權限資料
         /// </summary>
-        /// <param name="dbContext"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void CheckSqliteLog(DbContext dbContext)
+        private (List<TbSysWsAccount> accounts, List<TbSysWsModule> modules, List<TbSysWsPriv> privileges)
+            FetchDataFromDb(DbContext dbContext)
+        {
+            var accounts = dbContext.Set<TbSysWsAccount>().ToList();
+            var privileges = dbContext.Set<TbSysWsPriv>().ToList();
+            var modules = dbContext.Set<TbSysWsModule>().ToList();
+            return (accounts, modules, privileges);
+        }
+
+        /// <summary>
+        /// 更新 MemoryCache，設定指定的到期時間
+        /// </summary>
+        private void UpdateMemoryCache(List<TbSysWsAccount> accounts, List<TbSysWsModule> modules, List<TbSysWsPriv> privileges)
+        {
+            var cacheData = new CacheData();
+            cacheData.SetList(accounts);
+            cacheData.SetList(modules);
+            cacheData.SetList(privileges);
+            _memoryCache.Set(_authKey, cacheData, TimeSpan.FromHours(_cacheExpireHour));
+        }
+
+        /// <summary>
+        /// 將累積在 MemoryCache 的 Log 寫入資料庫，並清除 Cache 中的紀錄
+        /// </summary>
+        private void LogProcessData(DbContext context)
+        {
+            // 錯誤 Log 紀錄
+            if (_memoryCache.TryGetValue(_logKey, out CacheData cacheData) && cacheData != null)
+            {
+                var errorLogs = cacheData.GetList<TbSysWsLog>();
+                context.Set<TbSysWsLog>().AddRange(errorLogs);
+            }
+            // API 呼叫 Log 紀錄
+            if (_memoryCache.TryGetValue(_logCountKey, out CacheData cacheDataLog) && cacheDataLog != null)
+            {
+                var apiLogs = cacheDataLog.GetList<TbSysApiApplylog>();
+                foreach (var log in apiLogs)
+                {
+                    context.Add(log);
+                    // 同步更新對應模組的最後呼叫時間
+                    var module = context.Set<TbSysWsModule>().FirstOrDefault(x => x.WsModule == log.Module && x.WsMethod == log.Method);
+                    if (module != null)
+                    {
+                        module.Datestamp = log.Lastdatetime;
+                        context.Update(module);
+                    }
+                }
+            }
+            // 儲存至資料庫（同步處理）
+            context.SaveChanges();
+            _memoryCache.Remove(_logKey);
+            _memoryCache.Remove(_logCountKey);
+        }
+
+        /// <summary>
+        /// 備份資料至 Sqlite：清除舊有資料後重新寫入
+        /// </summary>
+        private void BackupToSqlite(List<TbSysWsAccount> accounts, List<TbSysWsModule> modules, List<TbSysWsPriv> privileges)
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var sqliteContext = scope.ServiceProvider.GetRequiredService<SqliteDbContext>();
+                Console.WriteLine($"[INFO] Using database: {sqliteContext.Database.GetDbConnection().ConnectionString}");
+                sqliteContext.Database.EnsureCreated();
+
+                // 清除現有資料
+                sqliteContext.TbSysWsAccounts.RemoveRange(sqliteContext.TbSysWsAccounts);
+                sqliteContext.TbSysWsModules.RemoveRange(sqliteContext.TbSysWsModules);
+                sqliteContext.TbSysWsPrivs.RemoveRange(sqliteContext.TbSysWsPrivs);
+                sqliteContext.SaveChanges();
+
+                // 寫入新資料
+                sqliteContext.TbSysWsAccounts.AddRange(accounts);
+                sqliteContext.TbSysWsModules.AddRange(modules);
+                sqliteContext.TbSysWsPrivs.AddRange(privileges);
+                sqliteContext.SaveChanges();
+            }
+        }
+
+        /// <summary>
+        /// 檢查 Sqlite 是否有遺漏的 Log，若有則存回 MSSQL，再清除 Sqlite 中的紀錄
+        /// </summary>
+        private void CheckSqliteLog(DbContext mssqlContext)
         {
             try
             {
                 using (var scope = _serviceProvider.CreateScope())
                 {
-                    var context = scope.ServiceProvider.GetRequiredService<SqliteDbContext>();
-                    if (context.TbSysWsLogs.Count() != 0)
+                    var sqliteContext = scope.ServiceProvider.GetRequiredService<SqliteDbContext>();
+                    if (sqliteContext.TbSysWsLogs.Any())
                     {
-                        List<TbSysWsLog> data = context.TbSysWsLogs.AsNoTracking().ToList();
-                        data.ForEach(x => x.Seq = 0);
-                        dbContext.Set<TbSysWsLog>().AddRange(data);
-                        dbContext.SaveChangesAsync();
+                        // 讀取 Sqlite 中的 Log 與 API 呼叫紀錄
+                        var wsLogs = sqliteContext.TbSysWsLogs.AsNoTracking().ToList();
+                        var apiLogs = sqliteContext.TbSysApiApplylog.AsNoTracking().ToList();
 
-                        context.TbSysWsLogs.ExecuteDelete();
-                        context.SaveChanges();
+                        // 重置序號，確保新增至 MSSQL 時為新資料
+                        wsLogs.ForEach(x => x.Seq = 0);
+                        apiLogs.ForEach(x => x.Seq = 0);
+
+                        mssqlContext.Set<TbSysWsLog>().AddRange(wsLogs);
+                        mssqlContext.Set<TbSysApiApplylog>().AddRange(apiLogs);
+                        mssqlContext.SaveChanges();
+
+                        // 清除 Sqlite 中的舊紀錄
+                        sqliteContext.TbSysWsLogs.ExecuteDelete();
+                        sqliteContext.TbSysApiApplylog.ExecuteDelete();
+                        sqliteContext.SaveChanges();
                     }
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                // 此處可依需求記錄 Log 或採取其他錯誤處理措施
+                throw;
             }
         }
 
+        #endregion
+
+        #region Log Activity
+
         /// <summary>
-        /// 將Log寫入DB
+        /// 記錄同步活動到資料庫
         /// </summary>
-        /// <param name="context"></param>
-        public void LogProcessData(DbContext context)
+        private void LogSyncActivity(string status, string description, string source = "系統")
         {
             try
             {
-                CacheData cacheData = new CacheData();
-                _memoryCache.TryGetValue(_logkey, out cacheData);
-                if (cacheData != null)
+                using (var scope = _serviceProvider.CreateScope())
                 {
-                    var logdata = cacheData.GetList<TbSysWsLog>();
-                    context.Set<TbSysWsLog>().AddRange(logdata);
-                    int i = context.SaveChanges();
-                    _memoryCache.Remove(_logkey);
+                    var dbContextProvider = scope.ServiceProvider.GetRequiredService<DbContextProvider>();
+                    var dbContext = dbContextProvider.GetDbContext();
+                    string dbType = dbContext.Database.IsSqlServer() ? "MSSQL" : "Sqlite";
+
+                    dbContext.Set<TbSysWsLog>().Add(new TbSysWsLog
+                    {
+                        WsAp = "System",
+                        WsModule = "Sync",
+                        LogMessage = $"同步資料 Log From {dbType} - {description}",
+                        LogType = "INFO",
+                        LogStatus = status,
+                        Datestamp = DateTime.UtcNow
+                    });
+                    dbContext.SaveChanges();
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                // 可在此記錄例外狀況
+                throw;
             }
         }
-        /// <summary>
-        /// 從資料庫取得數據
-        /// </summary>
-        private (List<TbSysWsAccount>, List<TbSysWsModule>, List<TbSysWsPriv>) FetchDataFromDb(DbContext dbContext)
-        {
-            var accounts = dbContext.Set<TbSysWsAccount>().ToList();
-            var privileges = dbContext.Set<TbSysWsPriv>().ToList();
-            var modules = dbContext.Set<TbSysWsModule>().ToList();
-
-            return (accounts, modules, privileges);
-        }
-
-        /// <summary>
-        /// 更新 MemoryCache
-        /// </summary>
-        private void UpdateMemoryCache(List<TbSysWsAccount> accounts, List<TbSysWsModule> modules, List<TbSysWsPriv> privileges, string source)
-        {
-
-            var cacheData = new CacheData();
-            cacheData.SetList(accounts);
-            cacheData.SetList(modules);
-            cacheData.SetList(privileges);
-            _memoryCache.Set(_authkey, cacheData, TimeSpan.FromHours(_cache_expire_hour));
-        }
-
-        /// <summary>
-        /// 備份至 SQLite
-        /// </summary>
-        private void BackupToSqlite(List<TbSysWsAccount> accounts, List<TbSysWsModule> modules, List<TbSysWsPriv> privileges)
-        {
-            using (var scope = _serviceProvider.CreateScope()) // 讓 BackgroundService 內部管理 Scoped
-            {
-                try
-                {
-                    var dbContext = scope.ServiceProvider.GetRequiredService<SqliteDbContext>();
-                    Console.WriteLine($"[INFO] Using database: {dbContext.Database.GetDbConnection().ConnectionString}");
-                    dbContext.Database.EnsureCreated();
-
-                    dbContext.TbSysWsAccounts.RemoveRange(dbContext.TbSysWsAccounts);
-                    dbContext.TbSysWsModules.RemoveRange(dbContext.TbSysWsModules);
-                    dbContext.TbSysWsPrivs.RemoveRange(dbContext.TbSysWsPrivs);
-                    dbContext.SaveChanges();
-
-                    dbContext.TbSysWsAccounts.AddRange(accounts);
-                    dbContext.TbSysWsModules.AddRange(modules);
-                    dbContext.TbSysWsPrivs.AddRange(privileges);
-                    dbContext.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    throw;
-                }
-            }
-        }
-
-        public override void Dispose()
-        {
-            _timer?.Dispose();
-            base.Dispose();
-        }
+        #endregion
     }
 }
 

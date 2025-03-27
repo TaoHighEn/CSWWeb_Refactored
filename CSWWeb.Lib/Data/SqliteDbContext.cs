@@ -14,6 +14,8 @@ namespace CSWWeb.Lib.Data
         {
             _configuration = configuration;
         }
+
+        public virtual DbSet<TbSysApiApplylog> TbSysApiApplylog { get; set; }
         public virtual DbSet<TbSysWsAccount> TbSysWsAccounts { get; set; }
 
         public virtual DbSet<TbSysWsAccountHist> TbSysWsAccountHists { get; set; }
@@ -58,6 +60,32 @@ namespace CSWWeb.Lib.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<TbSysApiApplylog>(entity =>
+            {
+                entity
+                    //.HasNoKey()
+                    .ToTable("TB_SYS_API_APPLYLOG");
+
+                entity.Property(e => e.Count).HasColumnName("COUNT");
+                entity.Property(e => e.Lastdatetime)
+                    .HasColumnType("datetime")
+                    .HasColumnName("LASTDATETIME");
+                entity.Property(e => e.Method)
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .HasColumnName("METHOD");
+                entity.Property(e => e.Module)
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .HasColumnName("MODULE");
+                entity.Property(e => e.Seq)
+                    .ValueGeneratedOnAdd()
+                    .HasColumnName("SEQ");
+                entity.Property(e => e.Sys)
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .HasColumnName("SYS");
+            });
             modelBuilder.Entity<TbSysWsAccount>(entity =>
             {
                 entity

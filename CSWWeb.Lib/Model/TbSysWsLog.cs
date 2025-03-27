@@ -29,8 +29,8 @@ public partial class TbSysWsLog : ICustomLogger
         // 設定 LogMessage、預設 LogType 為 INFO，並記錄 LogStatus 與目前 UTC 時間
         WsModule = res.HttpContext.GetEndpoint().DisplayName;
         WsApServer = res.HttpContext.Connection.RemoteIpAddress.ToString();
-        LogMessage = message + "HttpStatus：" + res.StatusCode ;
-        LogType = "Err";
+        LogMessage = message;
+        LogType = "Error";
         LogStatus = "N";
         Datestamp = DateTime.UtcNow.AddHours(8);
     }

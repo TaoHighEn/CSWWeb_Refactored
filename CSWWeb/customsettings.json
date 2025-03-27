@@ -3,6 +3,10 @@
         "KEY": "01CSWSytem2025AHoC6Q7a93CSWSytem",
         "IV": "System07Iks2KK6Q"
     },
+    "DES": {
+        "KEY": "WSau4a83"
+    },
+
     "Jwt": {
         "Key": "YourSecretKeyIsLongEnoughFor256BitsOfSecurity",
         "Issuer": "AuthCheck",
@@ -17,12 +21,13 @@
         "Password": "StrongPassword123!"
     },
     "SyncSettings": {
-        "IntervalMinutes": 15,
+        "IntervalMinutes": 10,
         "EnabledOnStartup": true,
         "ExpireHours": 72
     },
     "MemoryCacheKey": {
         "LogKey": "ApiLog",
-        "AuthKey": "Auth"
+        "AuthKey": "Auth",
+        "LogCountKey": "LogCount"
     }
 }

@@ -13,6 +13,10 @@ namespace CSWWeb.Lib.Utils
         private readonly byte[] _key;
         private readonly byte[] _iv;
 
+        // DES 固定的 Key 與 IV (需符合 DES 的 8 字節要求)
+        private string _DesKey = "WSau4a83";
+        private string _DesIV = "WSau4a83";
+
         public AesEncryptionHelper(IConfiguration configuration)
         {
             var keyString = configuration["AES:Key"];
@@ -23,11 +27,15 @@ namespace CSWWeb.Lib.Utils
 
             _key = Encoding.UTF8.GetBytes(keyString);
             _iv = Encoding.UTF8.GetBytes(ivString);
-
+            _DesKey = configuration["DES:Key"];
+            _DesIV = configuration["DES:Key"];
             if (_key.Length != 32 || _iv.Length != 16)
                 throw new ArgumentException("Invalid AES Key or IV length");
         }
 
+        /// <summary>
+        /// 使用 AES 加密明文字串，回傳 Base64 格式的密文。
+        /// </summary>
         public string EncryptString(string plainText)
         {
             if (string.IsNullOrEmpty(plainText))
@@ -40,14 +48,18 @@ namespace CSWWeb.Lib.Utils
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.PKCS7;
 
-                using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
+                using (var encryptor = aes.CreateEncryptor())
                 {
                     byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
-                    byte[] encryptedBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+                    byte[] encryptedBytes = ExecuteCryptoTransform(encryptor, plainBytes);
                     return Convert.ToBase64String(encryptedBytes);
                 }
             }
         }
+
+        /// <summary>
+        /// 使用 AES 解密 Base64 格式的密文，回傳明文字串。
+        /// </summary>
         public string DecryptString(string encryptedText)
         {
             if (string.IsNullOrEmpty(encryptedText))
@@ -60,68 +72,72 @@ namespace CSWWeb.Lib.Utils
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.PKCS7;
 
-                using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
+                using (var decryptor = aes.CreateDecryptor())
                 {
                     byte[] encryptedBytes = Convert.FromBase64String(encryptedText);
-                    byte[] decryptedBytes = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
+                    byte[] decryptedBytes = ExecuteCryptoTransform(decryptor, encryptedBytes);
                     return Encoding.UTF8.GetString(decryptedBytes);
                 }
             }
         }
 
         /// <summary>
-        /// 現行系統的DES解密
+        /// 使用 DES 加密明文字串，回傳 Base64 格式的密文。
         /// </summary>
-        /// <param name="encryptedText"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public string DESDecryptString(string encryptedText)
-        {
-            if (string.IsNullOrEmpty(encryptedText))
-                throw new ArgumentNullException(nameof(encryptedText));
-            using (var des = new DESCryptoServiceProvider())
-            {
-                des.Key = ASCIIEncoding.ASCII.GetBytes("WSau4a83");
-                des.IV = ASCIIEncoding.ASCII.GetBytes("WSau4a83");
-                // 進行解碼
-                var ms = new System.IO.MemoryStream();
-                var cs = new CryptoStream(ms, des.CreateDecryptor(), CryptoStreamMode.Write);
-                var inputByteArray = Convert.FromBase64String(encryptedText);
-                cs.Write(inputByteArray, 0, inputByteArray.Length);
-                cs.FlushFinalBlock();
-                cs.Close();
-                // 將解碼的文字轉成 String.
-                var str = Encoding.UTF8.GetString(ms.ToArray());
-                ms.Close();
-                return str;
-            }
-        }
-
-        /// <summary>
-        /// 現行系統的DES加密
-        /// </summary>
-        /// <param name="encryptText"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
         public string DESEncryptString(string encryptText)
         {
             if (string.IsNullOrEmpty(encryptText))
                 throw new ArgumentNullException(nameof(encryptText));
+
             using (var des = new DESCryptoServiceProvider())
             {
-                des.Key = ASCIIEncoding.ASCII.GetBytes("WSau4a83");
-                des.IV = ASCIIEncoding.ASCII.GetBytes("WSau4a83");
-                // 進行加密
-                var ms = new System.IO.MemoryStream();
-                var cs = new CryptoStream(ms, des.CreateEncryptor(), CryptoStreamMode.Write);
-                var inputByteArray = Encoding.UTF8.GetBytes(encryptText);
-                cs.Write(inputByteArray, 0, inputByteArray.Length);
-                cs.FlushFinalBlock();
-                cs.Close();
-                // 轉出字串
-                var str = Convert.ToBase64String(ms.ToArray());
-                ms.Close();
-                return str;
+                des.Key = ASCIIEncoding.ASCII.GetBytes(_DesKey);
+                des.IV = ASCIIEncoding.ASCII.GetBytes(_DesIV);
+
+                using (var encryptor = des.CreateEncryptor())
+                {
+                    byte[] inputBytes = Encoding.UTF8.GetBytes(encryptText);
+                    byte[] encryptedBytes = ExecuteCryptoTransform(encryptor, inputBytes);
+                    return Convert.ToBase64String(encryptedBytes);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 使用 DES 解密 Base64 格式的密文，回傳明文字串。
+        /// </summary>
+        public string DESDecryptString(string encryptedText)
+        {
+            if (string.IsNullOrEmpty(encryptedText))
+                throw new ArgumentNullException(nameof(encryptedText));
+
+            using (var des = new DESCryptoServiceProvider())
+            {
+                des.Key = ASCIIEncoding.ASCII.GetBytes(_DesKey);
+                des.IV = ASCIIEncoding.ASCII.GetBytes(_DesIV);
+
+                using (var decryptor = des.CreateDecryptor())
+                {
+                    byte[] inputBytes = Convert.FromBase64String(encryptedText);
+                    byte[] decryptedBytes = ExecuteCryptoTransform(decryptor, inputBytes);
+                    return Encoding.UTF8.GetString(decryptedBytes);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 透過指定的 ICryptoTransform 執行加解密作業，並回傳轉換後的位元組陣列。
+        /// </summary>
+        private byte[] ExecuteCryptoTransform(ICryptoTransform cryptoTransform, byte[] input)
+        {
+            using (var ms = new MemoryStream())
+            {
+                using (var cs = new CryptoStream(ms, cryptoTransform, CryptoStreamMode.Write))
+                {
+                    cs.Write(input, 0, input.Length);
+                    cs.FlushFinalBlock();
+                }
+                return ms.ToArray();
             }
         }
     }

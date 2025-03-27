@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using CSWWeb.Lib.Interface;
 using CSWWeb.Lib.Services;
 using CSWWeb.Lib;
+using CSWWeb.Middlewares;
 namespace CSWWeb
 {
     public class Program
@@ -35,7 +36,7 @@ namespace CSWWeb
                 var connString = configuration.GetConnectionString("MssqlConnection");
                 options.UseSqlServer(connString);
             });
-            
+
             // 配置Sqlite資料庫
             builder.Services.AddDbContext<SqliteDbContext>((serviceProvider, options) =>
             {
@@ -86,45 +87,15 @@ namespace CSWWeb
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-            // **初始化 MemoryCache 測試資料**
-            //using (var scope = app.Services.CreateScope())
-            //{
-            //    var memoryCache = scope.ServiceProvider.GetRequiredService<IMemoryCache>();
-                
-            //    // 建立 CacheData 實例
-            //    var cacheData = new CacheData();
-            //    cacheData.AddItem<Lib.Model.TbSysWsAccount>(new Lib.Model.TbSysWsAccount() { Sys = "User", SysPwd = "P@ssw0rd" });
-            //    cacheData.AddItem<Lib.Model.TbSysWsAccount>(new Lib.Model.TbSysWsAccount() { Sys = "User2", SysPwd = new AesEncryptionHelper(configuration).EncryptString("P@ssw0rd") });
-            //    cacheData.AddItem<Lib.Model.TbSysWsAccount>(new Lib.Model.TbSysWsAccount() { Sys = "User3", SysPwd = "P@ssw0rd" });
-            //    memoryCache.Set("Auth", cacheData);
-            //}
-
+            app.UseTTypeMiddleware<LogCountMiddleware>();
+            app.UseLoggerMiddleware<LoggerMiddleware<Lib.Model.TbSysWsLog>>();
             app.UseHttpsRedirection();
             app.UseAuthentication(); // 啟用身份驗證
             //引用Basic驗證 - CSWWeb.Lib
             app.UseAuthenticationMiddleware<CustomMiddleware<Lib.Model.TbSysWsAccount>>();
             //引用JWT驗證 - CSWWeb.Lib
             app.UseJWTMiddleware();
-            //自訂身分驗證Middleware
-            //app.UseAuthenticationMiddleware<YourOwnerMiddleware>();
-
-            using (var scope = app.Services.CreateScope())
-            {
-                // 取得 DbContextProvider 實例
-                var provider = scope.ServiceProvider.GetRequiredService<Lib.Data.DbContextProvider>();
-                // 根據連線狀態取得實際的 DbContext
-                var dbContext = provider.GetDbContext();
-
-                // 依據實際回傳的 DbContext 型別來使用 LoggerMiddleware
-                if (dbContext is Lib.Data.WebApiaContext)
-                {
-                    app.UseLoggerMiddleware<Lib.Data.WebApiaContext, TbSysWsLog>();
-                }
-                else if (dbContext is Lib.Data.SqliteDbContext)
-                {
-                    app.UseLoggerMiddleware<Lib.Data.SqliteDbContext, TbSysWsLog>();
-                }
-            }
+            
             app.UseAuthorization();  // 啟用授權
             app.MapControllers();
             app.Run();
